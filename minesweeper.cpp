@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <windows.h>
 #include <unordered_map>
+#include <ctime>
 
 using namespace std;
 
@@ -44,13 +45,21 @@ unordered_map<string, string> setColor = {                          // unordered
 };
 void printGrid(char **arr, size_t length);
 char **createArray(size_t length);
+void placeMines(char **arr, size_t length, int numMines);
 void deleteArray(char **arr, size_t length);
+
 int main()
 {
-    size_t lengthlite = 0;
-    cin >> lengthlite;
-    const size_t length = lengthlite;
+    size_t lengthLite = 0;
+    cout<<"Enter length of grid: ";
+    cin >> lengthLite;
+    const size_t length = lengthLite;
+    unsigned int numMinesLite = 0;
+    cout << "Enter number of mines: ";
+    cin >> numMinesLite;
+    const unsigned int numMines = numMinesLite;
     auto a = createArray(length);
+    placeMines(a, length, numMines);
     printGrid(a, length);
     system("pause");
     deleteArray(a, length);
@@ -92,7 +101,6 @@ void printGrid(char **arr, size_t length)                           //  function
 
     cout << setColor["RED_BRIGHT"] << horizontalMesh << setColor["DEFAULT"] << endl;       //  printing bottom horizontal border
 }
-
 char **createArray(size_t length)                                   //  function to return matrix
 {
     char **arr = new char *[length];                                //  create an array
@@ -106,7 +114,6 @@ char **createArray(size_t length)                                   //  function
     }
     return arr;
 }
-
 void deleteArray(char **arr, size_t length)
 {
     for (size_t i = 0; i < length; i++)
@@ -115,5 +122,13 @@ void deleteArray(char **arr, size_t length)
     }
     delete[] arr;
 }
-
+void placeMines(char **arr, size_t length, int numMines)
+{
+    srand(time(0));
+    for(int n = 0; n<numMines; n++){
+        size_t i = rand()%length;
+        size_t j = rand()%length;
+        arr[i][j] = 'X';
+    }    
+}
     // add progress board:  Time: 00:45 | Flags left: 3 | Moves: 10.
