@@ -179,10 +179,10 @@ void cellsNearMines(Cell** arr, vector<int>& minesArray, unsigned int numOfMines
         { 1, -1 },{ 1, 0 },{ 1, 1 }
     };
     
-    for(unsigned int i = 0 ; i< numOfMines*2 ;i+=2)       // every [2n-th] element is the COL coordinate of a mine, n>=0 , n is Natural number
+    for(unsigned int i = 0 ; i< numOfMines*2 ;i+=2)       
     {
-        int mineROW = minesArray[i];
-        int mineCOL = minesArray[i+1];
+        int mineROW = minesArray[i];                    // every [2n-th] element is the ROW coordinate of a mine, n>=0 , n is Natural number
+        int mineCOL = minesArray[i+1];                  // every [2n+1-th] element is the COL coordinate of a mine, n>=0 , n is Natural number
         for (const auto& direction : directions) {
         int neighborROW = mineROW + direction[0]; // Calculate neighbor's row
         int neighborCOL = mineCOL + direction[1]; // Calculate neighbor's column
