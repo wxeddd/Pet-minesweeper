@@ -5,9 +5,10 @@
 #include <windows.h>
 #include <unordered_map>
 #include <ctime>
+#include <vector>
 
 using namespace std;
-
+vector<int> minesArray={};
 unordered_map<string, string> setColor = {                          // unordered map for easier and more intuitive use of ANSI Escape Codes to manage output color
     {"DEFAULT", "\033[0m"},
     {"BLACK", "\033[30m"},
@@ -43,29 +44,64 @@ unordered_map<string, string> setColor = {                          // unordered
     {"CYAN_BRIGHT_BG", "\033[106m"},
     {"WHITE_BRIGHT_BG", "\033[107m"}
 };
-void printGrid(char **arr, size_t length);
-char **createArray(size_t length);
-void placeMines(char **arr, size_t length, int numMines);
-void deleteArray(char **arr, size_t length);
+struct Cell {
+    string content = " ";
+    string visibleContent = "#"; 
+    unsigned int surroundingMines = 0;
+    bool isMine = false;
+    bool isNearMine = false;
+    bool isFlagged = false;
+    bool isOpened = false;
+    bool isDetonated = false;
+    
+
+    void updateCellInformation(){
+        if(isMine){
+            content = 'X';
+        } else if(isNearMine && !isMine){
+            content = to_string(surroundingMines);
+        }else {
+            content = ' ';
+        }
+    }
+    void updateCellStatus(){
+         visibleContent = isOpened ? content : visibleContent;
+        //visibleContent = isFlagged ? "F" : visibleContent;
+    }
+    void printCell(){
+        cout << /*visibleC*/content;
+    }
+
+};
+void printGrid(Cell **arr, size_t length);
+Cell **createArray(size_t length);
+void placeMines(Cell **arr, size_t length, unsigned int numOfMines);
+void deleteArray(Cell **arr, size_t length);
+void updateCellInformation(Cell** arr, size_t length);
+void cellsNearMines(Cell** arr, vector<int>& minesArray, unsigned int numOfMines, size_t lenght);
+void calculateSurroundingMines(Cell** arr, size_t length);
 
 int main()
 {
+
     size_t lengthLite = 0;
     cout<<"Enter length of grid: ";
     cin >> lengthLite;
     const size_t length = lengthLite;
-    unsigned int numMinesLite = 0;
+    unsigned int numOfMinesLite = 0;
     cout << "Enter number of mines: ";
-    cin >> numMinesLite;
-    const unsigned int numMines = numMinesLite;
+    cin >> numOfMinesLite;
+    const unsigned int numOfMines = numOfMinesLite;
     auto a = createArray(length);
-    placeMines(a, length, numMines);
-    printGrid(a, length);
+    placeMines(a, length, numOfMines);
+    cellsNearMines(a, minesArray, numOfMines, length );
+    updateCellInformation(a,length);
+    printGrid(a,length);
     system("pause");
     deleteArray(a, length);
 }
 
-void printGrid(char **arr, size_t length)                           //  function to print grid
+void printGrid(Cell **arr, size_t length)                           //  function to print grid
 {
     char ROWS = 'A';
     int COLS = 1;
@@ -93,28 +129,25 @@ void printGrid(char **arr, size_t length)                           //  function
         cout <<setColor["RED_BRIGHT"]<< " |";                       //  printing side border between ROW number and first cell
         for (size_t j = 0; j < length; j++)                         //  printing row
         {
-            cout << setColor["DEFAULT"]<< " " << arr[i][j];                               //  printing cell`s content
-            cout << setColor["RED_BRIGHT"]<< " |";                //  printing border between cells
+            cout << setColor["DEFAULT"]<< " ";
+            arr[i][j].printCell();                             //  printing cell`s content
+            cout << setColor["RED_BRIGHT"]<< " |";                  //  printing border between cells
         }
         cout << endl;                                               //  new line 
     }
 
     cout << setColor["RED_BRIGHT"] << horizontalMesh << setColor["DEFAULT"] << endl;       //  printing bottom horizontal border
 }
-char **createArray(size_t length)                                   //  function to return matrix
+Cell **createArray(size_t length)                                   //  function to return matrix
 {
-    char **arr = new char *[length];                                //  create an array
+    Cell **arr = new Cell *[length];                                //  create a matrix
     for (size_t i = 0; i < length; i++)
     {
-        arr[i] = new char[length];
-        for (size_t j = 0; j < length; j++)
-        {
-            arr[i][j] = ' ';
-        }
+        arr[i] = new Cell [length];                                 //  create an array of Cells
     }
     return arr;
 }
-void deleteArray(char **arr, size_t length)
+void deleteArray(Cell **arr, size_t length)
 {
     for (size_t i = 0; i < length; i++)
     {
@@ -122,13 +155,53 @@ void deleteArray(char **arr, size_t length)
     }
     delete[] arr;
 }
-void placeMines(char **arr, size_t length, int numMines)
+void placeMines(Cell **arr, size_t length, unsigned int numOfMines)
 {
     srand(time(0));
-    for(int n = 0; n<numMines; n++){
+    for(int n = 0; n<numOfMines;){
         size_t i = rand()%length;
         size_t j = rand()%length;
-        arr[i][j] = 'X';
+        if(!arr[i][j].isMine){
+            arr[i][j].isMine = true;
+            minesArray.push_back(i);
+            minesArray.push_back(j);
+            n++;
+        }
+
     }    
 }
-    // add progress board:  Time: 00:45 | Flags left: 3 | Moves: 10.
+void cellsNearMines(Cell** arr, vector<int>& minesArray, unsigned int numOfMines, size_t length)
+{
+    const int directions[8][2]=             //an array for easier calculations if the neighbouring cell is in the grid bounds
+    {
+        { -1, -1 },{ -1, 0 },{ -1, 1 },
+        { 0, -1 },/*cell-mine*/{ 0, 1 },
+        { 1, -1 },{ 1, 0 },{ 1, 1 }
+    };
+    
+    for(unsigned int i = 0 ; i< numOfMines*2 ;i+=2)       // every [2n-th] element is the COL coordinate of a mine, n>=0 , n is Natural number
+    {
+        int mineROW = minesArray[i];
+        int mineCOL = minesArray[i+1];
+        for (const auto& direction : directions) {
+        int neighborROW = mineROW + direction[0]; // Calculate neighbor's row
+        int neighborCOL = mineCOL + direction[1]; // Calculate neighbor's column
+
+            // Check if neighbor is within bounds
+            if (neighborROW >= 0 && neighborROW < length &&
+                neighborCOL >= 0 && neighborCOL < length) {
+                arr[neighborROW][neighborCOL].surroundingMines++;
+                arr[neighborROW][neighborCOL].isNearMine= true;
+                }
+            }
+            
+    }
+}
+void updateCellInformation(Cell** arr, size_t length){
+    for(size_t i = 0; i < length; i++){
+        for(size_t j = 0; j< length; j++){
+            arr[i][j].updateCellInformation();
+        }
+    }
+}
+   // add progress board:  Time: 00:45 | Flags left: 3 | Moves: 10.
