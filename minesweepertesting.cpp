@@ -75,7 +75,7 @@ struct Cell {
         }
     }
     void updateCellStatus(){
-        visibleContent = isOpened ? content : isFlagged ? "F": visibleContent;
+        visibleContent = isOpened ? content : isFlagged ? "F": "#";
     }
     void printCell(){
         cout << visibleContent;
@@ -246,7 +246,9 @@ void move(Cell** arr, bool& end){
     }
     else if (moveAction == "O")
     {
+        if(!arr[indexROW][indexCOL].isFlagged){
         arr[indexROW][indexCOL].isOpened = true;
+        }
     }
     else if (moveAction == "UF")
     {
