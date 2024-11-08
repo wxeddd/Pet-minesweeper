@@ -19,6 +19,12 @@ void clearScreen() {
         system("clear"); // Linux or macOS
     #endif
 }
+static const int directions[8][2]=             //an array for easier calculations if the neighbouring cell is in the grid bounds
+    {
+        { -1, -1 },{ -1, 0 },{ -1, 1 },
+        { 0, -1 },/*cell-mine*/{ 0, 1 },
+        { 1, -1 },{ 1, 0 },{ 1, 1 }
+    };
 unordered_map<string, string> setColor = {                          // unordered map for easier and more intuitive use of ANSI Escape Codes to manage output color
     {"DEFAULT", "\033[0m"},
     {"BLACK", "\033[30m"},
@@ -63,6 +69,7 @@ struct Cell {
     bool isFlagged = false;
     bool isOpened = false;
     bool detonated = false;
+    bool isBlank = true;
     
 
     void setCellContent(){
@@ -74,7 +81,7 @@ struct Cell {
             content = ' ';
         }
     }
-    void updateCellStatus(){
+    void updateCellVisualContent(){
         visibleContent = isOpened ? content : isFlagged ? "F": "#";
     }
     void printCell(){
@@ -93,15 +100,16 @@ Cell **createArray(size_t length);
 void placeMines(Cell **arr, size_t length, unsigned int numOfMines);
 void deleteArray(Cell **arr, size_t length);
 void setCellContent(Cell** arr, size_t length);
-void cellsNearMines(Cell** arr, vector<int>& minesArray, unsigned int numOfMines, size_t lenght);
+void cellsNearMines(Cell** arr, vector<int>& minesArray, unsigned int numOfMines, size_t length);
 void updateCellStatus(Cell** arr, size_t length);
-void move(Cell** arr, bool& end);
-
+void move(Cell** arr, bool& end, size_t length);
+void blankCellExpansion(Cell** arr, vector<int>& openedBlankCell, size_t length);
 
 int main()
 {
-    static bool end = false;
-    size_t lengthLite = 0;
+
+    bool end = false;
+    size_t lengthLite;
     cout<<"Enter length of grid: ";
     cin >> lengthLite;
     const size_t length = lengthLite;
@@ -115,7 +123,7 @@ int main()
     setCellContent(a,length);
     printGrid(a,length);
     while( !end){
-    move(a, end);
+    move(a, end,length);
     clearScreen();
     printGrid(a,length);
     }
@@ -185,6 +193,7 @@ void placeMines(Cell **arr, size_t length, unsigned int numOfMines)
         size_t j = rand()%length;
         if(!arr[i][j].isMine){
             arr[i][j].isMine = true;
+            arr[i][j].isBlank = false;
             minesArray.push_back(i);
             minesArray.push_back(j);
             n++;
@@ -194,13 +203,6 @@ void placeMines(Cell **arr, size_t length, unsigned int numOfMines)
 }
 void cellsNearMines(Cell** arr, vector<int>& minesArray, unsigned int numOfMines, size_t length)
 {
-    const int directions[8][2]=             //an array for easier calculations if the neighbouring cell is in the grid bounds
-    {
-        { -1, -1 },{ -1, 0 },{ -1, 1 },
-        { 0, -1 },/*cell-mine*/{ 0, 1 },
-        { 1, -1 },{ 1, 0 },{ 1, 1 }
-    };
-    
     for(unsigned int i = 0 ; i< numOfMines*2 ;i+=2)       
     {
         int mineROW = minesArray[i];                    // every [2n-th] element is the ROW coordinate of a mine, n>=0 , n is Natural number
@@ -214,6 +216,7 @@ void cellsNearMines(Cell** arr, vector<int>& minesArray, unsigned int numOfMines
                 neighborCOL >= 0 && neighborCOL < length) {
                 arr[neighborROW][neighborCOL].surroundingMines++;
                 arr[neighborROW][neighborCOL].isNearMine= true;
+                arr[neighborROW][neighborCOL].isBlank = false;
                 }
             }
             
@@ -226,7 +229,33 @@ void setCellContent(Cell** arr, size_t length){
         }
     }
 }
-void move(Cell** arr, bool& end){
+void blankCellExpansion(Cell **arr, vector<int>& openedBlankCell, size_t length)
+{
+    vector<int> neighbouringBlankClosedCells = {};
+    for (int i = 0; i < openedBlankCell.size(); i += 2)
+    {
+        for (const auto &direction : directions)
+        {
+            int neighborROW = openedBlankCell[i + 0] + direction[0];
+            int neighborCOL = openedBlankCell[i + 1] + direction[1];
+            if (neighborROW >= 0 && neighborROW < length &&
+                neighborCOL >= 0 && neighborCOL < length &&
+                arr[neighborROW][neighborCOL].isBlank && !arr[neighborROW][neighborCOL].isOpened)
+            {
+
+                arr[neighborROW][neighborCOL].isOpened = true;
+                neighbouringBlankClosedCells.push_back(neighborROW);
+                neighbouringBlankClosedCells.push_back(neighborCOL);
+                arr[neighborROW][neighborCOL].updateCellVisualContent();
+            }
+        }
+    }
+    if (neighbouringBlankClosedCells.size() != 0)
+    {
+        blankCellExpansion(arr, neighbouringBlankClosedCells, length);
+    }
+}
+void move(Cell** arr, bool& end, size_t length){
     string move, moveROW, moveAction, moveCOL;
     cout << "Enter a move ROW:COL-Action(F/O): ";
     cin>>move;
@@ -256,9 +285,15 @@ void move(Cell** arr, bool& end){
     }else {
         cout<< " Invalid input";
     }
+    if( arr[indexROW][indexCOL].isBlank){
+    vector<int> openedBlankCell = {indexROW, indexCOL}; 
+    blankCellExpansion(arr, openedBlankCell, length);
+    }
 
     end = arr[indexROW][indexCOL].checkIfDetonated();
-    arr[indexROW][indexCOL].updateCellStatus();
+    arr[indexROW][indexCOL].updateCellVisualContent();
 }
+
+
 //    move: ROW:COL action[Flag/Open]
 // add progress board:  Time: 00:45 | Flags left: 3 | Moves: 10.
