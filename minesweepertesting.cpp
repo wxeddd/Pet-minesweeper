@@ -104,19 +104,14 @@ void cellsNearMines(Cell** arr, vector<int>& minesArray, unsigned int numOfMines
 void updateCellStatus(Cell** arr, size_t length);
 void move(Cell** arr, bool& end, size_t length);
 void blankCellExpansion(Cell** arr, vector<int>& openedBlankCell, size_t length);
-
+size_t getLength();
+unsigned int getNumOfMines();
 int main()
 {
 
     bool end = false;
-    size_t lengthLite;
-    cout<<"Enter length of grid: ";
-    cin >> lengthLite;
-    const size_t length = lengthLite;
-    unsigned int numOfMinesLite = 0;
-    cout << "Enter number of mines: ";
-    cin >> numOfMinesLite;
-    const unsigned int numOfMines = numOfMinesLite;
+    const size_t length = getLength();
+    const unsigned int numOfMines = getNumOfMines();
     auto a = createArray(length);
     placeMines(a, length, numOfMines);
     cellsNearMines(a, minesArray, numOfMines, length );
@@ -131,6 +126,18 @@ int main()
     deleteArray(a, length);
 }
 
+size_t getLength(){
+    size_t lengthLite;
+    cout<<"Enter length of grid: ";
+    cin >> lengthLite;
+    return lengthLite;
+}
+unsigned int getNumOfMines(){
+    unsigned int numOfMinesLite = 0;
+    cout << "Enter number of mines: ";
+    cin >> numOfMinesLite;
+    return numOfMinesLite;
+}
 void printGrid(Cell **arr, size_t length)                           //  function to print grid
 {
     char ROWS = 'A';
@@ -258,11 +265,10 @@ void blankCellExpansion(Cell **arr, vector<int>& openedBlankCell, size_t length)
 void move(Cell** arr, bool& end, size_t length){
     string move, moveROW, moveAction, moveCOL;
     cout << "Enter a move ROW:COL-Action(F/O): ";
-    cin>>move;
-    cin.ignore();
+    getline(cin, move);
     istringstream input(move);
     getline(input, moveROW, ':'); // Read the ROW part before ':'
-    getline(input, moveCOL, '-'); // Read the COL part before the space
+    getline(input, moveCOL, ' '); // Read the COL part before the space
     getline(input, moveAction, ' ');
     int indexROW = toupper(moveROW[0]) - 'A';
     int indexCOL = stoi(moveCOL) -1;
