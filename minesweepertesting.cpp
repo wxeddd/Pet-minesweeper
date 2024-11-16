@@ -105,13 +105,13 @@ void updateCellStatus(Cell** arr, size_t length);
 void move(Cell** arr, bool& end, size_t length);
 void blankCellExpansion(Cell** arr, vector<int>& openedBlankCell, size_t length);
 size_t getLength();
-unsigned int getNumOfMines();
+unsigned int getNumOfMines(size_t length);
 int main()
 {
 
     bool end = false;
     const size_t length = getLength();
-    const unsigned int numOfMines = getNumOfMines();
+    const unsigned int numOfMines = getNumOfMines(length);
     auto a = createArray(length);
     placeMines(a, length, numOfMines);
     cellsNearMines(a, minesArray, numOfMines, length );
@@ -127,15 +127,43 @@ int main()
 }
 
 size_t getLength(){
-    size_t lengthLite;
-    cout<<"Enter length of grid: ";
-    cin >> lengthLite;
+    int lengthLite = 0;
+    while(1){
+        try{
+            string input = "";
+            cout<<"Enter length of grid: ";
+            getline(cin, input);
+            if(to_string(stoi(input))!=input or stoi(input)<0 ){
+                throw invalid_argument("");
+            }
+            lengthLite = stoi(input);
+            break;
+        }
+            catch ( const invalid_argument& e){
+                clearScreen();
+                cout<<"Error: invalid argument" <<endl;
+            }
+    }
     return lengthLite;
 }
-unsigned int getNumOfMines(){
-    unsigned int numOfMinesLite = 0;
-    cout << "Enter number of mines: ";
-    cin >> numOfMinesLite;
+unsigned int getNumOfMines(size_t length){
+    int numOfMinesLite;
+    while(1){
+        try{
+            string input = "";
+            cout << "Enter number of mines: ";
+            getline(cin, input);
+            if(to_string(stoi(input))!=input or (stoi(input)<0 or stoi(input)>=length*length) ){
+                throw invalid_argument("");
+            } 
+            numOfMinesLite = stoi(input);
+            break;
+        }
+            catch ( const invalid_argument& e){
+                clearScreen();
+                cout<<"Error: invalid input."<<endl;
+            }
+    }
     return numOfMinesLite;
 }
 void printGrid(Cell **arr, size_t length)                           //  function to print grid
@@ -263,17 +291,37 @@ void blankCellExpansion(Cell **arr, vector<int>& openedBlankCell, size_t length)
     }
 }
 void move(Cell** arr, bool& end, size_t length){
-    string move, moveROW, moveAction, moveCOL;
-    cout << "Enter a move ROW:COL-Action(F/O): ";
-    getline(cin, move);
-    istringstream input(move);
-    getline(input, moveROW, ':'); // Read the ROW part before ':'
-    getline(input, moveCOL, ' '); // Read the COL part before the space
-    getline(input, moveAction, ' ');
-    int indexROW = toupper(moveROW[0]) - 'A';
-    int indexCOL = stoi(moveCOL) -1;
-    for(size_t i = 0; i < moveAction.length(); i++){
-    moveAction[i] = toupper(moveAction[i]);
+    string move = "", moveROW = "", moveAction = "", moveCOL = "";
+    int indexCOL = 1, indexROW = 1;
+    while(1){
+        try{
+            cout << "Enter a move ROW:COL Action(F/O): ";
+            getline(cin, move);
+            istringstream input(move);
+            getline(input, moveROW, ':'); // Read the ROW part before ':'
+            getline(input, moveCOL, ' '); // Read the COL part before the space
+            getline(input, moveAction, ' ');
+            indexROW = toupper(moveROW[0]) - 'A';
+            indexCOL = stoi(moveCOL) -1;
+            for(size_t i = 0; i < moveAction.length(); i++){
+            moveAction[i] = toupper(moveAction[i]);}
+            if(move.empty()){
+                throw invalid_argument("invalid input");
+            }
+            if((indexROW<0 or indexROW>length) or (indexCOL< 0 or indexCOL>length)){
+                throw invalid_argument("the coordinates exceed the grid.");
+            }
+            if( !( moveAction == "F" or ( moveAction =="UF" or moveAction == "O" ) ) ){
+                throw invalid_argument("invalid action.");
+            }
+            break;
+        }
+        catch(const invalid_argument& e){
+            cin.clear();
+            clearScreen();
+            printGrid(arr,length);
+            cout<< "Error: "<<e.what()<<endl;
+        }
     }
     if (moveAction == "F")
     {
@@ -291,7 +339,7 @@ void move(Cell** arr, bool& end, size_t length){
     }else {
         cout<< " Invalid input";
     }
-    if( arr[indexROW][indexCOL].isBlank){
+    if( arr[indexROW][indexCOL].isOpened and arr[indexROW][indexCOL].isBlank){
     vector<int> openedBlankCell = {indexROW, indexCOL}; 
     blankCellExpansion(arr, openedBlankCell, length);
     }
