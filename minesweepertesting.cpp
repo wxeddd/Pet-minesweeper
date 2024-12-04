@@ -112,6 +112,10 @@ struct Cell
         bool detonated = false;
         bool isBlank = true;
     }
+    void printCellContent()
+    {
+        cout << content;
+    }
 };
 void printGrid(Cell **arr, size_t length);
 Cell **createArray(size_t length);
@@ -125,6 +129,7 @@ void blankCellExpansion(Cell **arr, vector<int> &openedBlankCell, size_t length)
 size_t getLength();
 unsigned int getNumOfMines(size_t length);
 void displayProgress(size_t flagsLeft, size_t movesCount);
+void seeGrid(Cell **arr, size_t length);
 int main()
 {
 
@@ -146,7 +151,8 @@ int main()
         printGrid(a, length);
         displayProgress(numOfMines - flaggedCount, movesCount);
     }
-    cout<<"Boom! Good luck next time!\n";
+    cout << "Boom! Good luck next time!\n";
+    seeGrid(a, length);
     system("pause");
     deleteArray(a, length);
 }
@@ -230,8 +236,12 @@ void printGrid(Cell **arr, size_t length) //  function to print grid
         for (size_t j = 0; j < length; j++)                       //  printing row
         {
             cout << setColor["DEFAULT"] << " ";
-            arr[i][j].printCell();                  //  printing cell`s content
-            cout << setColor["RED_BRIGHT"] << " |"; //  printing border between cells
+            if (arr[i][j].detonated == true)
+            {
+                cout << setColor["RED_BG"];
+            }
+            arr[i][j].printCell();                                          //  printing cell`s content
+            cout << setColor["BLACK_BG"] << setColor["RED_BRIGHT"] << " |"; //  printing border between cells
         }
         cout << endl; //  new line
     }
@@ -361,7 +371,7 @@ void move(Cell **arr, bool &end, size_t const length, size_t &moves, size_t &fla
             {
                 throw invalid_argument("invalid input");
             }
-            if ((indexROW < 0 or indexROW > length-1) or (indexCOL < 0 or indexCOL > length-1))
+            if ((indexROW < 0 or indexROW > length - 1) or (indexCOL < 0 or indexCOL > length - 1))
             {
                 throw invalid_argument("the coordinates exceed the grid.");
             }
@@ -414,8 +424,72 @@ void move(Cell **arr, bool &end, size_t const length, size_t &moves, size_t &fla
 void displayProgress(size_t flagsLeft, size_t movesCount)
 {
     cout << "Time: Unavailable | Flags left: " << flagsLeft << " | Moves: " << movesCount << ".\n";
-    if(flagsLeft == 0){
-        cout<<"Attention: all flags used, won`t be able to flag\n";
+    if (flagsLeft == 0)
+    {
+        cout << "Attention: all flags used, won`t be able to flag\n";
+    }
+}
+void seeGrid(Cell **arr, size_t length)
+{
+    int input;
+    while (true)
+    {
+        cout << "Would you like to see grid? Yes(1)/No(0): ";
+        try
+        {
+            cin >> input;
+            if (input == 1 || input == 0)
+            {
+                break;
+            }
+            throw invalid_argument("");
+        }
+        catch (const invalid_argument &e)
+        {
+            clearScreen();
+            cout << "Error: invalid input.";
+        }
+    }
+    if (input == 1)
+    {
+        char ROWS = 'A';
+        int COLS = 1;
+        cout << endl
+             << "   ";
+        for (size_t i = 0; i < length; i++) //  Print COLUMN numbers for better orientation in the grid
+        {
+            int width = 4; // added pudding so COLUMN numbers wouldn`t shift when their lenght is longer than 1 symbol
+            string numStr = to_string(COLS);
+            int leftPadding = (width - numStr.size()) / 2;
+            int rightPadding = width - numStr.size() - leftPadding;
+            cout << setColor["YELLOW_BRIGHT"] << setw(leftPadding + numStr.size()) << COLS++ << setw(rightPadding) << " " << setColor["DEFAULT"]; // output COLUMN number
+        }
+        string horizontalMesh = "  +";
+        for (int i = 0; i < length; i++) //  added horizontalMesh for easier grid output and optimize number of cout calls
+        {
+            horizontalMesh += "---+"; // making horizontalMesh string as long, as the grid
+        }
+
+        cout << endl;
+        for (size_t i = 0; i < length; i++) //  printing grid`s row
+        {
+            cout << setColor["RED_BRIGHT"] << horizontalMesh << endl; //  printing horizontal barrier
+            cout << setColor["YELLOW_BRIGHT"] << ROWS++;              //  printing ROW`s number for better orientation in the grid
+            cout << setColor["RED_BRIGHT"] << " |";                   //  printing side border between ROW number and first cell
+            for (size_t j = 0; j < length; j++)                       //  printing row
+            {
+                cout << setColor["DEFAULT"] << " ";
+                if (arr[i][j].detonated == true)
+                {
+                    cout << setColor["RED_BG"];
+                }
+                arr[i][j].printCellContent();                                   //  printing cell`s content
+                cout << setColor["BLACK_BG"] << setColor["RED_BRIGHT"] << " |"; //  printing border between cells
+            }
+            cout << endl; //  new line
+        }
+
+        cout << setColor["RED_BRIGHT"] << horizontalMesh << setColor["DEFAULT"] << endl; //  printing bottom horizontal border
     }
 }
 
